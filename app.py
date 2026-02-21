@@ -4,7 +4,7 @@ import random
 st.set_page_config(page_title="Guess the Number", page_icon="🎮")
 
 st.title("🎮 გამოიცანი საიდუმლო რიცხვი")
-st.caption("აირჩიე სირთულე, გაქვს შეზღუდული მცდელობები და მიიღე მინიშნებები 😉")
+st.caption("აირჩიე სირთულე, გაქვს შეზღუდული მცდელობები და ბოლო 2 მცდელობაზე მიიღე დახმარება 😉")
 
 # --- Difficulty settings ---
 LEVELS = {
@@ -23,6 +23,7 @@ def new_game():
     st.session_state.game_over = False
     st.session_state.last_msg = ""
     st.session_state.level_name = level_name
+    st.session_state.hint_used = False  # ✅ დახმარება ერთხელ
 
 # --- Init / reset if level changed ---
 if "secret" not in st.session_state:
@@ -54,7 +55,6 @@ if try_btn:
         st.session_state.last_msg = f"გილოცავ! სწორად გამოიცანი 🎉 (მცდელობები: {st.session_state.attempts})"
         st.session_state.game_over = True
     else:
-        # მინიშნება: ახლოს ხარ?
         close = abs(guess - secret) <= 3
 
         if guess > secret:
@@ -75,6 +75,23 @@ if try_btn:
 remaining = st.session_state.max_attempts - st.session_state.attempts
 st.metric("დარჩენილი მცდელობები", remaining)
 
+# ✅ დახმარება მხოლოდ მაშინ, როცა დარჩა 2 მცდელობა
+if (remaining == 2) and (not st.session_state.game_over) and (not st.session_state.hint_used):
+    st.info("🆘 დახმარება ხელმისაწვდომია: დარჩა 2 მცდელობა")
+
+    if st.button("მიჩვენე მიახლოებული დიაპაზონი 🔎", use_container_width=True):
+        secret = st.session_state.secret
+
+        # დიაპაზონის სიგანე (ფიქსირებული)
+        width = 5  # შეგიძლია შეცვალო 3/5/7-ზე
+
+        low = max(cfg["min"], secret - width)
+        high = min(cfg["max"], secret + width)
+
+        st.session_state.hint_used = True
+        st.warning(f"მინიშნება: საიდუმლო რიცხვი არის **{low}**-დან **{high}**-მდე.")
+
+# --- Messages ---
 if st.session_state.last_msg:
     if "გილოცავ" in st.session_state.last_msg:
         st.success(st.session_state.last_msg)
@@ -91,6 +108,4 @@ with col1:
         st.rerun()
 
 with col2:
-    show_secret = st.toggle("დამალული რიცხვის ჩვენება (მასწავლებლის რეჟიმი)")
-    if show_secret:
-        st.info(f"საიდუმლო რიცხვია: {st.session_state.secret}")
+    st.write("რჩევა: შეცვალე სირთულე და თამაში თავიდან დაიწყება ✅")
